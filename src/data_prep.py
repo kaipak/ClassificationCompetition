@@ -19,7 +19,15 @@ class DataPrep:
         :param rm_punc:
         """
         self.df = pd.read_json(train_path, lines=True)
+        self.df['concat'] = (
+                self.df['context'].str.join(" ") + " "
+                + self.df['response']
+        )
         self.df_test = pd.read_json(test_path, lines=True)
+        self.df_test['concat'] = (
+                self.df_test['context'].str.join(" ") + " "
+                + self.df_test['response']
+        )
         self.df_split = False # whether or not dataframes were split
 
     def train_test_split(self, train_size: float = 0.8, random_state: int=None,
