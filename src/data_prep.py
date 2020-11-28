@@ -45,6 +45,9 @@ class DataPrep:
                              shuffle=shuffle)
         )
         self.df_split = True
+        print(f"{train_size} train ratio results in {self.df_train.shape[0]} "
+              f"training observations and {self.df_validation.shape[0]} "
+              f"validation observations.")
 
     def write_data(self, datapath: str = '../data/processed',
                    train_fname: str = 'train.json',
