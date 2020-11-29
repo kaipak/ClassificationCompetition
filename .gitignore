@@ -1,7 +1,7 @@
 .DS_Store
 .DS_Store?
 .ipynb_checkpoints
-*/model.pt
+data/output/model.pt
 data/output/metrics.pt
 
 # Created by https://www.toptal.com/developers/gitignore/api/JupyterNotebooks,python,pycharm
