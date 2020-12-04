@@ -13,6 +13,8 @@ from torchtext.data import Field, TabularDataset, BucketIterator, Iterator
 import torch.nn as nn
 from transformers import BertTokenizer, BertForSequenceClassification
 import torch.optim as optim
+import tensorflow as tf
+from tensorflow import summary
 
 
 class SarcasmDetector(object):
@@ -21,6 +23,7 @@ class SarcasmDetector(object):
                  tokenizer_do_lc: bool = True, model_criterion=nn.BCELoss(),
                  input_dir=Path('../data/'),
                  output_dir=Path('../data/output/'),
+                 train_log_dir=Path('../data/logs/tensorboard/train/'),
                  model_options_name: str = 'bert-base-uncased'):
         """
 
@@ -32,6 +35,7 @@ class SarcasmDetector(object):
         self.model_criterion = model_criterion
         self.INPUT_DIR = input_dir
         self.OUTPUT_DIR = output_dir
+        self.TRAIN_LOG_DIR = train_log_dir
         self.tokenizer = (
             BertTokenizer.from_pretrained(self.tokenizer_model,
                                           do_lower_case=tokenizer_do_lc)
@@ -114,6 +118,12 @@ class SarcasmDetector(object):
         :return:
         """
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        # instantiate tensorboard writer
+        self.writer = summary.create_file_writer(self.TRAIN_LOG_DIR + 
+                                                 'lr=' + str(lr) + '; ' +
+                                                 'epochs=' + str(num_epochs) +
+                                                 ';')
+
         # initialize running values
         if eval_every is None:
             eval_every = len(self.train_iter) // 2
@@ -158,6 +168,7 @@ class SarcasmDetector(object):
                             loss, _ = output
 
                             valid_running_loss += loss.item()
+                            curr_val_loss = loss.item()
 
                     # evaluation
                     average_train_loss = running_loss / eval_every
@@ -168,6 +179,7 @@ class SarcasmDetector(object):
                     global_steps_list.append(global_step)
 
                     # resetting running values
+                    curr_train_loss = loss.item()
                     running_loss = 0.0
                     valid_running_loss = 0.0
                     self.model.train()
@@ -179,18 +191,24 @@ class SarcasmDetector(object):
                                     num_epochs * len(self.train_iter),
                                     average_train_loss, average_valid_loss))
 
+                    # write to tensorboard logs
+                    with self.writer.as_default():
+                        tf.summary.scalar('train loss', curr_train_loss, step=global_step)
+                    with self.writer.as_default():
+                        tf.summary.scalar('validation loss', curr_val_loss, step=global_step)
+
                     # checkpoint
                     if best_valid_loss > average_valid_loss:
                         best_valid_loss = average_valid_loss
-                        print(self.OUTPUT_DIR / 'foo.pt')
-                        print(best_valid_loss)
-                        self.save_checkpoint(self.OUTPUT_DIR / 'model.pt',
+                        #print(self.OUTPUT_DIR / 'foo.pt')
+                        #print(best_valid_loss)
+                        self.save_checkpoint(self.OUTPUT_DIR + '/' + 'model.pt',
                                              best_valid_loss)
-                        self.save_metrics(self.OUTPUT_DIR / 'metrics.pt',
+                        self.save_metrics(self.OUTPUT_DIR + '/' + 'metrics.pt',
                                           train_loss_list, valid_loss_list,
                                           global_steps_list)
 
-        self.save_metrics(self.OUTPUT_DIR / 'metrics.pt', train_loss_list,
+        self.save_metrics(self.OUTPUT_DIR + '/' + 'metrics.pt', train_loss_list,
                           valid_loss_list, global_steps_list)
         print("Finished Training!")
 
@@ -244,6 +262,23 @@ class SarcasmDetector(object):
         return state_dict['train_loss_list'], state_dict['valid_loss_list'], \
                state_dict['global_steps_list']
 
+    def tune(self, lr_list, num_epochs_list):
+        """
+
+        :param lr_list:
+        :param num_epochs_list:
+        :return:
+        """
+        # loop through hyperparams
+        for lr in lr_list:
+            for num_epochs in num_epochs_list:
+
+                # print current params
+                print('CURRENT ITERATION: lr=' + str(lr) + '; num_epochs=' +
+                      str(num_epochs) + ';---------------------------------')
+                
+                # run train method on currrent params
+                self.train(lr=lr, num_epochs=num_epochs)
 
 class BERT(nn.Module):
 
