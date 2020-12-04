@@ -118,6 +118,12 @@ class SarcasmDetector(object):
         :return:
         """
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        # instantiate tensorboard writer
+        self.writer = summary.create_file_writer(self.TRAIN_LOG_DIR + 
+                                                 'lr=' + str(lr) + '; ' +
+                                                 'epochs=' + str(num_epochs) +
+                                                 ';')
+
         # initialize running values
         if eval_every is None:
             eval_every = len(self.train_iter) // 2
