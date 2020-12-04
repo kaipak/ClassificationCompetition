@@ -247,7 +247,7 @@ class SarcasmDetector(object):
 
 class BERT(nn.Module):
 
-    def __init__(self, options_name: str = "bert-base-uncased"):
+    def __init__(self, options_name: str = "bert-base-cased"):
         super(BERT, self).__init__()
 
         options_name = options_name
