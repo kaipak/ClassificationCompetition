@@ -54,7 +54,6 @@ class SarcasmDetector(object):
 
         self.model = BERT(options_name=model_options_name).to(self.device)
 
-
     def tokenize_data(self, train_fname, validate_fname, test_fname,
                       batch_size: int = 4, max_seq_len: int = 128,
                       lf_sequential: bool = False, lf_use_vocab: bool = False,
@@ -119,10 +118,8 @@ class SarcasmDetector(object):
         """
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
         # instantiate tensorboard writer
-        self.writer = summary.create_file_writer(self.TRAIN_LOG_DIR + 
-                                                 'lr=' + str(lr) + '; ' +
-                                                 'epochs=' + str(num_epochs) +
-                                                 ';')
+        pathstr = str(Path(self.TRAIN_LOG_DIR / f"lr={lr}-epochs={num_epochs}"))
+        self.writer = summary.create_file_writer(pathstr)
 
         # initialize running values
         if eval_every is None:
@@ -202,15 +199,53 @@ class SarcasmDetector(object):
                         best_valid_loss = average_valid_loss
                         #print(self.OUTPUT_DIR / 'foo.pt')
                         #print(best_valid_loss)
-                        self.save_checkpoint(self.OUTPUT_DIR + '/' + 'model.pt',
+                        self.save_checkpoint(self.OUTPUT_DIR / 'model.pt',
                                              best_valid_loss)
-                        self.save_metrics(self.OUTPUT_DIR + '/' + 'metrics.pt',
+                        self.save_metrics(self.OUTPUT_DIR / 'metrics.pt',
                                           train_loss_list, valid_loss_list,
                                           global_steps_list)
 
-        self.save_metrics(self.OUTPUT_DIR + '/' + 'metrics.pt', train_loss_list,
+        self.save_metrics(self.OUTPUT_DIR / 'metrics.pt', train_loss_list,
                           valid_loss_list, global_steps_list)
         print("Finished Training!")
+
+    def evaluate(self):
+        """
+
+        :return:
+        """
+        self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
+
+        y_pred = []
+        y_true = []
+
+        self.model.eval()
+        with torch.no_grad():
+            for (label, text), _ in self.test_iter:
+                label = label.type(torch.LongTensor)
+                label = label.to(self.device)
+                text = text.type(torch.LongTensor)
+                text = text.to(self.device)
+                output = self.model(text, label)
+
+                _, output = output
+                y_pred.extend(torch.argmax(output, 1).tolist())
+                y_true.extend(label.tolist())
+
+        print('Classification Report:')
+        print(classification_report(y_true, y_pred, labels=[1, 0], digits=4))
+
+        cm = confusion_matrix(y_true, y_pred, labels=[1, 0])
+        ax = plt.subplot()
+        sns.heatmap(cm, annot=True, ax=ax, cmap='Blues', fmt="d")
+
+        ax.set_title('Confusion Matrix')
+
+        ax.set_xlabel('Predicted Labels')
+        ax.set_ylabel('True Labels')
+
+        ax.xaxis.set_ticklabels(['SARCASM', 'NOT_SARCASM'])
+        ax.yaxis.set_ticklabels(['SARCASM', 'NOT_SARCASM'])
 
     def save_checkpoint(self, save_path, valid_loss):
         """
@@ -229,7 +264,7 @@ class SarcasmDetector(object):
         :param save_path:
         :return:
         """
-        state_dict = torch.load(save_path, map_location=device)
+        state_dict = torch.load(save_path, map_location=self.device)
         print(f'Model loaded from <== {save_path}')
 
         self.model.load_state_dict(state_dict['model_state_dict'])
