@@ -1,5 +1,6 @@
 from pathlib import Path
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, \
     confusion_matrix
@@ -70,33 +71,40 @@ class SarcasmDetector(object):
         :param tf_batch_first:
         :return:
         """
-        label_field = Field(sequential=lf_sequential, use_vocab=lf_use_vocab,
-                            batch_first=lf_batch_first, dtype=lf_dtype)
-        text_field = Field(use_vocab=tf_use_vocab,
-                           tokenize=self.tokenizer.encode,
-                           lower=tf_lower, include_lengths=tf_include_lengths,
-                           batch_first=tf_batch_first, fix_length=max_seq_len,
-                           pad_token=self.PAD_INDEX, unk_token=self.UNK_INDEX)
-        fields = [('label', label_field), ('text', text_field)]
+        self.batch_size = batch_size
+        self.max_seq_len = max_seq_len
+        self.label_field = Field(sequential=lf_sequential,
+                                 use_vocab=lf_use_vocab,
+                                 batch_first=lf_batch_first, dtype=lf_dtype)
+        self.text_field = Field(use_vocab=tf_use_vocab,
+                                tokenize=self.tokenizer.encode,
+                                lower=tf_lower,
+                                include_lengths=tf_include_lengths,
+                                batch_first=tf_batch_first,
+                                fix_length=self.max_seq_len,
+                                pad_token=self.PAD_INDEX,
+                                unk_token=self.UNK_INDEX)
+        self.fields = [('label', self.label_field), ('text', self.text_field)]
 
         train, valid, test = TabularDataset.splits(path=self.OUTPUT_DIR,
                                                    train=train_fname,
                                                    validation=validate_fname,
                                                    test=test_fname,
-                                                   format='CSV', fields=fields,
+                                                   format='CSV',
+                                                   fields=self.fields,
                                                    skip_header=True)
         print("Created train, validation, and test datasets "
               "with max_seq_len={}".format(max_seq_len))
         # Iterators
-        self.train_iter = BucketIterator(train, batch_size=batch_size,
+        self.train_iter = BucketIterator(train, batch_size=self.batch_size,
                                          sort_key=lambda x: len(x.text),
                                          device=self.device, train=True,
                                          sort=True, sort_within_batch=True)
-        self.valid_iter = BucketIterator(valid, batch_size=batch_size,
+        self.valid_iter = BucketIterator(valid, batch_size=self.batch_size,
                                          sort_key=lambda x: len(x.text),
                                          device=self.device, train=True,
                                          sort=True, sort_within_batch=True)
-        self.test_iter = Iterator(test, batch_size=batch_size,
+        self.test_iter = Iterator(test, batch_size=self.batch_size,
                                   device=self.device, train=False,
                                   shuffle=False, sort=False)
         print("Created iterators with batch_size={}".format(batch_size))
@@ -309,6 +317,35 @@ class SarcasmDetector(object):
                 
                 # run train method on currrent params
                 self.train(lr=lr, num_epochs=num_epochs)
+
+    def predict(self, filepath=Path('../data/output/sub.csv')):
+        """
+        """
+
+        preds = []
+        sub_dataset = TabularDataset(filepath, format="CSV", fields=self.fields,
+                                     skip_header=True)
+        sub_iter = Iterator(sub_dataset, batch_size=self.batch_size,
+                            device=self.device, train=False, shuffle=False,
+                            sort=False)
+        self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
+        self.model.eval()
+        with torch.no_grad():
+            for (label, text), _ in sub_iter:
+                label = label.type(torch.LongTensor)
+                label = label.to(self.device)
+                text = text.type(torch.LongTensor)
+                text = text.to(self.device)
+                output = self.model(text, label)
+                _, output = output
+                preds.extend(torch.argmax(output, 1).tolist())
+
+        id_list = ["twitter_" + str(n) for n in range(1, len(sub_dataset) + 1)]
+        label_list = ["SARCASM" if pred == 1 else "NOT_SARCASM" for pred in preds]
+        df_sub = pd.DataFrame(list(zip(id_list, label_list)),
+                              columns=['id', 'label'])
+        return df_sub
+
 
 class BERT(nn.Module):
 
