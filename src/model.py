@@ -15,14 +15,13 @@ from tensorflow import summary
 
 class SarcasmDetector(object):
 
-    def __init__(self, tokenizer_model: str = 'bert-base-uncased',
+    def __init__(self, tokenizer_model: str = 'bert-base-cased',
                  tokenizer_do_lc: bool = True, model_criterion=nn.BCELoss(),
                  input_dir=Path('../data/'),
                  output_dir=Path('../data/output/'),
                  train_log_dir=Path('../data/logs/tensorboard/train/'),
                  model_options_name: str = 'bert-base-uncased'):
         """
-
         :param tokenizer_model:
         :param tokenizer_do_lc:
         :param model_criterion:
