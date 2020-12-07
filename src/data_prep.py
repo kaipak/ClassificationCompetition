@@ -23,14 +23,14 @@ class DataPrep:
         self.df = pd.read_json(train_path, lines=True)
         self.df['label'] = (self.df['label'] == 'SARCASM').astype('int')
         self.df['concat'] = (
-                self.df['context'].str.join(" ") + " "
-                + self.df['response']
+                self.df['response']
+                + self.df['context'].str.join(" ")
         )
 
         self.df_sub = pd.read_json(sub_path, lines=True)
         self.df_sub['concat'] = (
-                self.df_sub['context'].str.join(" ") + " "
-                + self.df_sub['response']
+                self.df_sub['response']
+                + self.df_sub['context'].str.join(" ")
         )
         self.df_sub['label'] = 1
         self.df_split = False
