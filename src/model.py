@@ -338,7 +338,7 @@ class SarcasmDetector(object):
         self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
         self.model.eval()
         with torch.no_grad():
-            for (label, text), _ in sub_iter:
+            for (label, text[:512]), _ in sub_iter:
                 label = label.type(torch.LongTensor)
                 label = label.to(self.device)
                 text = text.type(torch.LongTensor)
