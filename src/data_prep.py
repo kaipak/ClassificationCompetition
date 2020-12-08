@@ -44,6 +44,7 @@ class DataPrep:
             self.df_sub.rename(columns={'concat': 'text'}, inplace=True)
 
         if rm_punc:
+            print("Removing non-alphanumeric chars.")
             self.df['text'] = self.df.text.apply(self.rm_non_alphanum)
             self.df_sub['text'] = self.df_sub.text.apply(self.rm_non_alphanum)
 
