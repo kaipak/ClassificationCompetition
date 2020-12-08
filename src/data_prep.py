@@ -24,13 +24,15 @@ class DataPrep:
         self.df['label'] = (self.df['label'] == 'SARCASM').astype('int')
         self.df['concat'] = (
                 self.df['response']
-                + self.df['context'].str.join(" ")
+                + " "
+                + self.df['context'].iloc[-1][0] #.str.join(" ")
         )
 
         self.df_sub = pd.read_json(sub_path, lines=True)
         self.df_sub['concat'] = (
                 self.df_sub['response']
-                + self.df_sub['context'].str.join(" ")
+                + " "
+                + self.df_sub['context'].iloc[-1][0] #.str.join(" ")
         )
         self.df_sub['label'] = 1
         self.df_split = False
@@ -40,8 +42,10 @@ class DataPrep:
         else:
             self.df.rename(columns={'concat': 'text'}, inplace=True)
             self.df_sub.rename(columns={'concat': 'text'}, inplace=True)
-        #self.df['text'] = self.df.text.apply(self.rm_non_alphanum)
-        #self.df_sub['text'] = self.df_sub.text.apply(self.rm_non_alphanum)
+
+        if rm_punc:
+            self.df['text'] = self.df.text.apply(self.rm_non_alphanum)
+            self.df_sub['text'] = self.df_sub.text.apply(self.rm_non_alphanum)
 
     def rm_non_alphanum(self, text):
         """

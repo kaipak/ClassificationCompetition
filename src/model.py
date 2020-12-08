@@ -15,7 +15,7 @@ from tensorflow import summary
 
 class SarcasmDetector(object):
 
-    def __init__(self, tokenizer_model: str = 'bert-base-cased',
+    def __init__(self, tokenizer_model: str = 'bert-base-uncased',
                  tokenizer_do_lc: bool = True, model_criterion=nn.BCELoss(),
                  input_dir=Path('../data/'),
                  output_dir=Path('../data/output/'),
@@ -267,7 +267,6 @@ class SarcasmDetector(object):
         :param save_path:
         :return:
         """
-        self.model = BERT(options_name=self.model_options_name).to(self.device)
         state_dict = torch.load(save_path, map_location=self.device)
         print(f'Model loaded from <== {save_path}')
 
@@ -339,7 +338,6 @@ class SarcasmDetector(object):
         self.model.eval()
         with torch.no_grad():
             for (label, text), _ in sub_iter:
-                text = text[:512]
                 label = label.type(torch.LongTensor)
                 label = label.to(self.device)
                 text = text.type(torch.LongTensor)
