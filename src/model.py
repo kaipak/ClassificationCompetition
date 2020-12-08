@@ -28,6 +28,7 @@ class SarcasmDetector(object):
         """
         self.tokenizer_model = tokenizer_model
         self.model_criterion = model_criterion
+        self.model_options_name = model_options_name
         self.INPUT_DIR = input_dir
         self.OUTPUT_DIR = output_dir
         self.TRAIN_LOG_DIR = train_log_dir
@@ -47,7 +48,7 @@ class SarcasmDetector(object):
         else:
             print("No GPU available, falling back to CPU.")
 
-        self.model = BERT(options_name=model_options_name).to(self.device)
+        self.model = BERT(options_name=self.model_options_name).to(self.device)
 
     def tokenize_data(self, train_fname, validate_fname, test_fname,
                       batch_size: int = 4, max_seq_len: int = 128,
@@ -266,6 +267,7 @@ class SarcasmDetector(object):
         :param save_path:
         :return:
         """
+        self.model = BERT(options_name=self.model_options_name).to(self.device)
         state_dict = torch.load(save_path, map_location=self.device)
         print(f'Model loaded from <== {save_path}')
 
@@ -322,9 +324,15 @@ class SarcasmDetector(object):
         """
 
         preds = []
-        sub_dataset = TabularDataset(filepath, format="CSV", fields=self.fields,
-                                     skip_header=True)
-        sub_iter = Iterator(sub_dataset, batch_size=self.batch_size,
+        #sub_dataset = TabularDataset(filepath, format="CSV", fields=self.fields,
+        #                             skip_header=True)
+        train, valid, sub = TabularDataset.splits(path=self.OUTPUT_DIR,
+                                                  train='train.csv',
+                                                  validation='validate.csv',
+                                                  test='sub.csv',
+                                                  format='CSV', fields=self.fields,
+                                                  skip_header=True)
+        sub_iter = Iterator(sub, batch_size=self.batch_size,
                             device=self.device, train=False, shuffle=False,
                             sort=False)
         self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
@@ -339,7 +347,7 @@ class SarcasmDetector(object):
                 _, output = output
                 preds.extend(torch.argmax(output, 1).tolist())
 
-        id_list = ["twitter_" + str(n) for n in range(1, len(sub_dataset) + 1)]
+        id_list = ["twitter_" + str(n) for n in range(1, len(sub) + 1)]
         label_list = ["SARCASM" if pred == 1 else "NOT_SARCASM" for pred in preds]
         df_sub = pd.DataFrame(list(zip(id_list, label_list)),
                               columns=['id', 'label'])
