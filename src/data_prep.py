@@ -40,8 +40,8 @@ class DataPrep:
         else:
             self.df.rename(columns={'concat': 'text'}, inplace=True)
             self.df_sub.rename(columns={'concat': 'text'}, inplace=True)
-        self.df['text'] = self.df.text.apply(self.rm_non_alphanum)
-        self.df_sub['text'] = self.df_sub.text.apply(self.rm_non_alphanum)
+        #self.df['text'] = self.df.text.apply(self.rm_non_alphanum)
+        #self.df_sub['text'] = self.df_sub.text.apply(self.rm_non_alphanum)
 
     def rm_non_alphanum(self, text):
         """
