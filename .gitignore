@@ -3,7 +3,7 @@
 .ipynb_checkpoints
 data/output/model.pt
 data/output/metrics.pt
-data/output/logs
+data/logs
 
 # Created by https://www.toptal.com/developers/gitignore/api/JupyterNotebooks,python,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=JupyterNotebooks,python,pycharm
