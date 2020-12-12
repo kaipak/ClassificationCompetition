@@ -16,11 +16,11 @@ from tensorflow import summary
 class SarcasmDetector(object):
 
     def __init__(self, tokenizer_model: str = 'bert-base-uncased',
-                 tokenizer_do_lc: bool = True, model_criterion=nn.BCELoss(),
+                 model_options_name: str = 'bert-base-uncased',
+                 tokenizer_do_lc: bool = False, model_criterion=nn.BCELoss(),
                  input_dir=Path('../data/'),
                  output_dir=Path('../data/output/'),
-                 train_log_dir=Path('../data/logs/tensorboard/train/'),
-                 model_options_name: str = 'bert-base-uncased'):
+                 train_log_dir=Path('../data/logs/tensorboard/train/')):
         """
         :param tokenizer_model:
         :param tokenizer_do_lc:
@@ -323,15 +323,15 @@ class SarcasmDetector(object):
         """
 
         preds = []
-        #sub_dataset = TabularDataset(filepath, format="CSV", fields=self.fields,
-        #                             skip_header=True)
-        train, valid, sub = TabularDataset.splits(path=self.OUTPUT_DIR,
-                                                  train='train.csv',
-                                                  validation='validate.csv',
-                                                  test='sub.csv',
-                                                  format='CSV', fields=self.fields,
-                                                  skip_header=True)
-        sub_iter = Iterator(sub, batch_size=self.batch_size,
+        sub_dataset = TabularDataset(filepath, format="CSV", fields=self.fields,
+                                     skip_header=True)
+        #train, valid, sub = TabularDataset.splits(path=self.OUTPUT_DIR,
+        #                                          train='train.csv',
+        #                                          validation='validate.csv',
+        #                                          test='sub.csv',
+        #                                          format='CSV', fields=self.fields,
+        #                                          skip_header=True)
+        sub_iter = Iterator(sub_dataset, batch_size=self.batch_size,
                             device=self.device, train=False, shuffle=False,
                             sort=False)
         self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
@@ -346,7 +346,7 @@ class SarcasmDetector(object):
                 _, output = output
                 preds.extend(torch.argmax(output, 1).tolist())
 
-        id_list = ["twitter_" + str(n) for n in range(1, len(sub) + 1)]
+        id_list = ["twitter_" + str(n) for n in range(1, len(sub_dataset) + 1)]
         label_list = ["SARCASM" if pred == 1 else "NOT_SARCASM" for pred in preds]
         df_sub = pd.DataFrame(list(zip(id_list, label_list)),
                               columns=['id', 'label'])

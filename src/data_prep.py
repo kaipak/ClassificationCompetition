@@ -25,14 +25,14 @@ class DataPrep:
         self.df['concat'] = (
                 self.df['response']
                 + " "
-                + self.df['context'].iloc[-1][0] #.str.join(" ")
+                + self.df['context'].str.join(" ")
         )
 
         self.df_sub = pd.read_json(sub_path, lines=True)
         self.df_sub['concat'] = (
                 self.df_sub['response']
                 + " "
-                + self.df_sub['context'].iloc[-1][0] #.str.join(" ")
+                + self.df_sub['context'].str.join(" ")
         )
         self.df_sub['label'] = 1
         self.df_split = False
@@ -111,6 +111,3 @@ class DataPrep:
                             encoding=sys.getdefaultencoding())
         self.df_sub[['label', 'text']].to_csv(rootpath / sub_fname, index=False,
                            encoding=sys.getdefaultencoding())
-
-
-
