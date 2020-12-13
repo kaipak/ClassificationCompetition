@@ -334,7 +334,7 @@ class SarcasmDetector(object):
         sub_iter = Iterator(sub_dataset, batch_size=self.batch_size,
                             device=self.device, train=False, shuffle=False,
                             sort=False)
-        self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
+        # self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
         self.model.eval()
         with torch.no_grad():
             for (label, text), _ in sub_iter:
