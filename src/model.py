@@ -212,12 +212,12 @@ class SarcasmDetector(object):
                           valid_loss_list, global_steps_list)
         print("Finished Training!")
 
-    def evaluate(self):
+    def evaluate(self, model_name):
         """
 
         :return:
         """
-        self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
+        self.load_checkpoint(model_name)
 
         y_pred = []
         y_true = []
@@ -318,23 +318,17 @@ class SarcasmDetector(object):
                 # run train method on currrent params
                 self.train(lr=lr, num_epochs=num_epochs)
 
-    def predict(self, filepath=Path('../data/output/sub.csv')):
+    def predict(self, model_name, filepath=Path('../data/output/sub.csv')):
         """
         """
 
         preds = []
         sub_dataset = TabularDataset(filepath, format="CSV", fields=self.fields,
                                      skip_header=True)
-        #train, valid, sub = TabularDataset.splits(path=self.OUTPUT_DIR,
-        #                                          train='train.csv',
-        #                                          validation='validate.csv',
-        #                                          test='sub.csv',
-        #                                          format='CSV', fields=self.fields,
-        #                                          skip_header=True)
         sub_iter = Iterator(sub_dataset, batch_size=self.batch_size,
                             device=self.device, train=False, shuffle=False,
                             sort=False)
-        # self.load_checkpoint(self.OUTPUT_DIR / 'model.pt')
+        self.load_checkpoint(model_name)
         self.model.eval()
         with torch.no_grad():
             for (label, text), _ in sub_iter:
